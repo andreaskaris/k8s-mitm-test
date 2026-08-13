@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arp-poison
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: arp-poison
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: arp-poison
+subjects:
+- kind: ServiceAccount
+  name: arp-poison
+roleRef:
+  kind: Role
+  name: arp-poison
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arp-poison
+  labels:
+    app: arp-poison
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arp-poison
+  template:
+    metadata:
+      labels:
+        app: arp-poison
+    spec:
+      serviceAccountName: arp-poison
+      containers:
+      - name: arp-poison
+        image: arp-poison:latest
+        imagePullPolicy: Never
+        securityContext:
+          privileged: true
