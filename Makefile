@@ -31,6 +31,7 @@ install-cni-plugins: ## Install CNI plugin binaries on the kind node
 	'
 
 deploy-client-server: ## Deploy agnhost server + client that curls /clientip
+	kind load docker-image $(ARP_POISON_IMAGE) --name $(CLUSTER_NAME)
 	kubectl apply -f deployment-server.yaml
 	kubectl apply -f deployment-client.yaml
 	kubectl rollout status deployment/server --timeout=120s
