@@ -4,7 +4,7 @@ NODE_NAME = $(CLUSTER_NAME)-control-plane
 
 ARP_POISON_IMAGE = arp-poison:latest
 
-.PHONY: help deploy undeploy deploy-client-server install-cni-plugins configure-node build-arp-poison deploy-arp-poison undeploy-arp-poison client-logs arp-poison-logs
+.PHONY: help deploy undeploy deploy-client-server install-cni-plugins configure-node build-arp-poison deploy-arp-poison undeploy-arp-poison clean-arp-poison-image client-logs arp-poison-logs clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-25s %s\n", $$1, $$2}'
@@ -57,5 +57,10 @@ client-logs: ## Follow client pod logs
 arp-poison-logs: ## Follow arp-poison pod logs
 	kubectl logs -f deployment/arp-poison
 
+clean-arp-poison-image: ## Remove the arp-poison Docker image
+	docker rmi $(ARP_POISON_IMAGE)
+
 undeploy: ## Delete the kind cluster
 	kind delete cluster --name $(CLUSTER_NAME)
+
+clean: undeploy clean-arp-poison-image ## Full cleanup: delete cluster and remove images

@@ -60,10 +60,12 @@ Content-Type: text/plain; charset=utf-8
 
 The HTTP response body (`10.10.0.28:52598`) is the client's pod IP and source port as seen by the server — visible in plaintext to the MITM attacker.
 
-## Teardown
+## Cleanup
+
+Full cleanup (delete cluster and remove Docker image):
 
 ```bash
-make undeploy  # Delete the entire kind cluster
+make clean
 ```
 
 ## Make Targets
