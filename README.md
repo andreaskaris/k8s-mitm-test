@@ -39,6 +39,23 @@ A single-node kind cluster with the default CNI disabled, replaced by the [bridg
 
 The client curls the server's pod IP directly (bypassing kube-proxy/iptables DNAT) so that traffic stays on the L2 bridge, making it interceptable via ARP spoofing.
 
+## How It Works
+
+The bridge CNI plugin connects all pods to a shared Linux bridge (`mynet0`). Pods communicate over this bridge at L2, resolving each other's MAC addresses via ARP. The bridge does not validate ARP replies, which makes it vulnerable to ARP spoofing.
+
+The attack works as follows:
+
+1. The **arp-poison** pod discovers the client and server pod IPs via `kubectl`.
+2. It enables IP forwarding (`net.ipv4.ip_forward=1`) so it can relay traffic between the two.
+3. It runs `arpspoof -r -t <client-ip> <server-ip>`, which sends forged ARP replies to both pods:
+   - Tells the **client** that the server's IP is at the attacker's MAC address.
+   - Tells the **server** that the client's IP is at the attacker's MAC address.
+4. Both pods update their ARP tables and start sending traffic to the attacker's MAC instead of each other's.
+5. The attacker forwards the traffic transparently (due to IP forwarding), so the connection stays alive.
+6. `tcpdump -l -nne -A` captures and prints all intercepted packets, including plaintext HTTP request and response bodies.
+
+This demonstrates why a flat L2 network without ARP spoofing protection (e.g., the bridge CNI's `macspoofchk` option or network policies) is vulnerable to MITM attacks from any pod on the same bridge.
+
 ## Example Output
 
 `make arp-poison-logs` shows the MITM pod intercepting HTTP traffic between the client and server. The captured packets include the full HTTP response with the client's IP:
